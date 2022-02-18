@@ -25,7 +25,8 @@ class CommandHandler:
             "adb-disconnect": Command(handler=self.handle_adb_disconnect, description="Run for all local ports: adb disconnect 127.0.0.1:<local_port>"),
             "adb-devices": Command(handler=self.handle_adb_devices, description="Run: adb devices"),
             "adb-push": Command(handler=self.handle_adb_push, description="Run for all local ports: adb -s 127.0.0.1:<local_port> push ..."),
-            "adb-shell": Command(handler=self.handle_adb_shell, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb shell ...")
+            "adb-shell": Command(handler=self.handle_adb_shell, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb shell ..."),
+            "adb-install": Command(handler=self.handle_adb_install, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb install ...")
         }
         self.unknown_command = Command(handler=self.handle_unknown, description="unknown command")
         self.terminated = False
@@ -90,3 +91,7 @@ class CommandHandler:
     def handle_adb_shell(self, cmd_name, cmd_args):
         for server in self.forward_servers:
             self.run_os_cmd("adb -s 127.0.0.1:"+str(server.local_port)+" shell "+cmd_args)
+
+    def handle_adb_install(self, cmd_name, cmd_args):
+        for server in self.forward_servers:
+            self.run_os_cmd("adb -s 127.0.0.1:"+str(server.local_port)+" install "+cmd_args)
