@@ -2,6 +2,8 @@
 
 # Copyright (c) 2022 Vitaly Yakovlev <vitaly@optinsoft.net>
 #
+# CPT.py
+#
 # This script allows to forward multiple local ports to the remote host:port via SSH.
 # If argument "count" equals 1 then it works exactly as this command:
 #
@@ -23,6 +25,7 @@ import argparse
 import ipaddress
 from dotenv import load_dotenv
 import json
+from cptutils import CommandHandler
 
 def forward_tunnel_server(local_port, remote_host, remote_port, transport):
     # this is a little convoluted, but lets me configure things for the Handler
@@ -32,7 +35,11 @@ def forward_tunnel_server(local_port, remote_host, remote_port, transport):
         chain_host = remote_host
         chain_port = remote_port
         ssh_transport = transport
-    return ForwardServer(("", local_port), SubHander)
+    server = ForwardServer(("", local_port), SubHander)
+    server.local_port = local_port
+    server.remote_host = remote_host
+    server.remote_port = remote_port
+    return server
 
 def main():
     load_dotenv()
@@ -89,22 +96,24 @@ def main():
     forward_servers = []
     forwarding_threads = []
 
+    for i in range(0, count):        
+        remote_host = str(remote_ip + i)
+        forward_servers.append(forward_tunnel_server(local_port+i, remote_host, remote_port, transport))
+
+    cmdhandler = CommandHandler(forward_servers)
+
     try:
-        for i in range(0, count):        
-            remote_host = str(remote_ip + i)
-            forward_servers.append(forward_tunnel_server(local_port+i, remote_host, remote_port, transport))
         for server in forward_servers:
             forwarding_threads.append(threading.Thread(target=server.serve_forever))
+        print("Start forwarding...")
         for thread in forwarding_threads:
             thread.setDaemon(True)
             thread.start()
-        print('Type "exit" to terminate.')
-        stop = False
-        while not stop:
+        cmdhandler.print_hint()
+        while not cmdhandler.terminated:
             try:
                 cmd = input(colored('(cpt) ', 'green'))
-                if (cmd == "exit"):
-                    stop = True
+                cmdhandler.handle(cmd)
             except KeyboardInterrupt:
                 stop = True    
     except Exception as e:
