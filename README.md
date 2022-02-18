@@ -16,7 +16,7 @@ or use the configuration file:
 python cpt.py --config=path_to_config.json
 ```
 
-If argument "count" equals 1 then it works exactly as this command:
+If argument "count" equals 1 (default) then it works exactly as this command:
 
 ```bash
 ssh -L local_port:remote_ip:remote_port ssh_user@ssh_host -i ssh_keyfile
