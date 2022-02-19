@@ -4,7 +4,8 @@
 
 import re
 from termcolor import colored
-import os
+import os, sys
+from subprocess import Popen, PIPE, TimeoutExpired
 
 class Command:
     def __init__(self, handler, description = ""):
@@ -21,12 +22,12 @@ class CommandHandler:
             "exit": Command(handler=self.handle_exit, description="Terminate forwarding and exit."),
             "help": Command(handler=self.handle_help, description="Display this message."),
             "list": Command(handler=self.handle_list, description="List forwards"),
-            "adb-connect": Command(handler=self.handle_adb_connect, description="Run for all local ports: adb connect 127.0.0.1:<local_port>"),
-            "adb-disconnect": Command(handler=self.handle_adb_disconnect, description="Run for all local ports: adb disconnect 127.0.0.1:<local_port>"),
+            "adb-connect": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb connect 127.0.0.1:<local_port>"),
+            "adb-disconnect": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb disconnect 127.0.0.1:<local_port>"),
             "adb-devices": Command(handler=self.handle_adb_devices, description="Run: adb devices"),
-            "adb-push": Command(handler=self.handle_adb_push, description="Run for all local ports: adb -s 127.0.0.1:<local_port> push ..."),
-            "adb-shell": Command(handler=self.handle_adb_shell, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb shell ..."),
-            "adb-install": Command(handler=self.handle_adb_install, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb install ...")
+            "adb-push": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> push ..."),
+            "adb-shell": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb shell ..."),
+            "adb-install": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb install ...")
         }
         self.unknown_command = Command(handler=self.handle_unknown, description="unknown command")
         self.terminated = False
@@ -73,25 +74,43 @@ class CommandHandler:
         print(colored("run: ", "green") + os_cmd)
         os.system(os_cmd)
 
-    def handle_adb_connect(self, cmd_name, cmd_args):
-        for server in self.forward_servers:
-            self.run_os_cmd("adb connect 127.0.0.1:"+str(server.local_port))
+    def process_open(self, os_cmd):
+        print(colored("run: ", "green") + os_cmd)
+        process = Popen(os_cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        return process
 
-    def handle_adb_disconnect(self, cmd_name, cmd_args):
+    def popen_adb_foreach_server(self, adb_command, cmd_args):
+        processes = []
         for server in self.forward_servers:
-            self.run_os_cmd("adb disconnect 127.0.0.1:"+str(server.local_port))
+            if adb_command in ['connect', 'disconnect']:
+                cmd = "adb " + adb_command + " 127.0.0.1:"+str(server.local_port)
+            else:
+                cmd = "adb -s 127.0.0.1:"+str(server.local_port)+" " + adb_command + " " + cmd_args
+            process = self.process_open(cmd)
+            p = process, server
+            processes.append(p)
+        return processes
+
+    def wait_for_processes(self, processes):
+        while processes:
+            for p in processes:
+                process, server = p
+                process_terminated = True
+                try:
+                    out, err = process.communicate(timeout=1)
+                    if out:
+                        sys.stdout.write(colored("(" + str(server.local_port) + ") ", "green") + out.decode())
+                    if err:
+                        sys.stdout.write(colored("(" + str(server.local_port) + ") ", "green") + colored(err.decode(), "red"))
+                except TimeoutExpired:
+                    process_terminated = False
+                if process_terminated:
+                    processes.remove(p)
 
     def handle_adb_devices(self, cmd_name, cmd_args):
         self.run_os_cmd("adb devices")
 
-    def handle_adb_push(self, cmd_name, cmd_args):
-        for server in self.forward_servers:
-            self.run_os_cmd("adb -s 127.0.0.1:"+str(server.local_port)+" push "+cmd_args)
-
-    def handle_adb_shell(self, cmd_name, cmd_args):
-        for server in self.forward_servers:
-            self.run_os_cmd("adb -s 127.0.0.1:"+str(server.local_port)+" shell "+cmd_args)
-
-    def handle_adb_install(self, cmd_name, cmd_args):
-        for server in self.forward_servers:
-            self.run_os_cmd("adb -s 127.0.0.1:"+str(server.local_port)+" install "+cmd_args)
+    def handle_adb_command_foreach(self, cmd_name, cmd_args):
+        adb_command = cmd_name.split("-")[1]
+        processes = self.popen_adb_foreach_server(adb_command, cmd_args)
+        self.wait_for_processes(processes)
