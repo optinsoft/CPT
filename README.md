@@ -30,3 +30,34 @@ If count = 2 then it is similar to run 2 parallel commands:
 ```
 
  etc.
+
+## Configuration file
+
+Example:
+
+```json
+{
+    "local_port": 8102,
+    "remote_ip": "10.0.0.2",
+    "remote_port": 5555,
+    "count": 60,
+    "ssh_host": "216.58.210.174",
+    "ssh_port": 22,
+    "ssh_user": "user",
+    "ssh_keyfile": "~/keyfile.pem"
+}
+```
+
+## Commands
+
+command | description
+---- | -----------
+`exit`|Stop forwardings and exit.
+`help`|Display help.
+`list`|List forwardings.
+`adb-connect`|Run for each forwarded port `<localport>`: `adb connect 127.0.0.1:<local_port>`
+`adb-disconnect`|Run for each forwarded port `<localport>`: `adb disconnect 127.0.0.1:<local_port>`
+`adb-devices`|Run: `adb devices`
+`adb-push`|Run for each forwarded port `<localport>`: `adb -s 127.0.0.1:<local_port> push ...`
+`adb-shell`|Run for each forwarded port `<localport>`: `adb -s 127.0.0.1:<local_port> shell ...`
+`adb-install`|Run for each forwarded port `<localport>`: `adb -s 127.0.0.1:<local_port> install ...`

@@ -19,15 +19,15 @@ class CommandHandler:
     def __init__(self, forward_servers):
         self.forward_servers = forward_servers
         self.commands = {
-            "exit": Command(handler=self.handle_exit, description="Terminate forwarding and exit."),
+            "exit": Command(handler=self.handle_exit, description="Stop forwardings and exit."),
             "help": Command(handler=self.handle_help, description="Display this message."),
-            "list": Command(handler=self.handle_list, description="List forwards"),
-            "adb-connect": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb connect 127.0.0.1:<local_port>"),
-            "adb-disconnect": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb disconnect 127.0.0.1:<local_port>"),
+            "list": Command(handler=self.handle_list, description="List forwardings"),
+            "adb-connect": Command(handler=self.handle_adb_command_foreach, description="Run for each forwarded port <localport>: adb connect 127.0.0.1:<local_port>"),
+            "adb-disconnect": Command(handler=self.handle_adb_command_foreach, description="Run for each forwarded port <localport>: adb disconnect 127.0.0.1:<local_port>"),
             "adb-devices": Command(handler=self.handle_adb_devices, description="Run: adb devices"),
-            "adb-push": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> push ..."),
-            "adb-shell": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb shell ..."),
-            "adb-install": Command(handler=self.handle_adb_command_foreach, description="Run for all local ports: adb -s 127.0.0.1:<local_port> adb install ...")
+            "adb-push": Command(handler=self.handle_adb_command_foreach, description="Run for each forwarded port <localport>: adb -s 127.0.0.1:<local_port> push ..."),
+            "adb-shell": Command(handler=self.handle_adb_command_foreach, description="Run for each forwarded port <localport>: adb -s 127.0.0.1:<local_port> adb shell ..."),
+            "adb-install": Command(handler=self.handle_adb_command_foreach, description="Run for each forwarded port <localport>: adb -s 127.0.0.1:<local_port> adb install ...")
         }
         self.unknown_command = Command(handler=self.handle_unknown, description="unknown command")
         self.terminated = False
