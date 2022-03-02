@@ -101,7 +101,7 @@ class CommandHandler:
                     if out:
                         sys.stdout.write(colored("(" + str(server.local_port) + ") ", "green") + out.decode())
                     if err:
-                        sys.stdout.write(colored("(" + str(server.local_port) + ") ", "green") + colored(err.decode(), "red"))
+                        sys.stderr.write(colored("(" + str(server.local_port) + ") ", "green") + colored(err.decode(), "red"))
                 except TimeoutExpired:
                     process_terminated = False
                 if process_terminated:
